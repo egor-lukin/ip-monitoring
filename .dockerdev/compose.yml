@@ -1,0 +1,82 @@
+x-app: &app
+  build:
+    context: .
+    args:
+      RUBY_VERSION: '3.1.2'
+      PG_MAJOR: '14'
+  image: ip-monitoring-dev:1.0.0
+  tmpfs:
+    - /tmp
+    - /app/tmp/pids
+
+x-backend: &backend
+  <<: *app
+  stdin_open: true
+  tty: true
+  volumes:
+    - ..:/app:cached
+    - bundle:/usr/local/bundle
+  environment: &backend_environment
+    DATABASE_URL: postgres://postgres:postgres@postgres:5432
+    REDIS_URL: redis://redis:6379/
+    MALLOC_ARENA_MAX: 2
+    WEB_CONCURRENCY: ${WEB_CONCURRENCY:-1}
+    XDG_DATA_HOME: /app/tmp/cache
+    YARN_CACHE_FOLDER: /app/node_modules/.yarn-cache
+    EDITOR: vi
+  depends_on:
+    postgres:
+      condition: service_healthy
+
+services:
+  web:
+    <<: *backend
+    command: bundle exec rackup -p 3000 --host 0.0.0.0
+    ports:
+      - '3000:3000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      sidekiq:
+        condition: service_started
+
+  sidekiq:
+    <<: *backend
+    command: bundle exec sidekiq -C config/sidekiq.yml
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  redis:
+    image: redis:6.2-alpine
+    volumes:
+      - redis:/data
+    ports:
+      - 6379
+    healthcheck:
+      test: redis-cli ping
+      interval: 1s
+      timeout: 3s
+      retries: 30
+
+  postgres:
+    image: postgres:14
+    volumes:
+      - .psqlrc:/root/.psqlrc:ro
+      - postgres:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - 5432
+    healthcheck:
+      test: pg_isready -U postgres -h 127.0.0.1
+      interval: 5s
+
+volumes:
+  bundle:
+  postgres:
+  redis:
