@@ -1,0 +1,12 @@
+---
+:verbose: true
+:queues:
+  - [default, 1]
+development:
+  :concurrency: 1
+:scheduler:
+  :schedule:
+    check_addresses:
+      every: '1m'
+      class: Jobs::CheckAddressesJob
+      queue: default

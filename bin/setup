@@ -1,0 +1,7 @@
+#!/bin/bash
+
+PGPASSWORD=postgres createdb -h postgres -U postgres ip_monitoring_development
+APP_ENV=development rake db:setup db:migrate
+
+PGPASSWORD=postgres createdb -h postgres -U postgres ip_monitoring_test
+APP_ENV=test rake db:setup db:migrate

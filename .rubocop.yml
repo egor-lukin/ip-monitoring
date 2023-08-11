@@ -1,0 +1,8 @@
+require:
+  - rubocop-rspec
+
+Style/Documentation:
+  Enabled: false
+
+RSpec/ExampleLength:
+  Max: 7

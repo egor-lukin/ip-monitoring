@@ -17,12 +17,11 @@ x-backend: &backend
     - ..:/app:cached
     - bundle:/usr/local/bundle
   environment: &backend_environment
+    APP_ENV: ${APP_ENV:-development}
     DATABASE_URL: postgres://postgres:postgres@postgres:5432
     REDIS_URL: redis://redis:6379/
     MALLOC_ARENA_MAX: 2
-    WEB_CONCURRENCY: ${WEB_CONCURRENCY:-1}
     XDG_DATA_HOME: /app/tmp/cache
-    YARN_CACHE_FOLDER: /app/node_modules/.yarn-cache
     EDITOR: vi
   depends_on:
     postgres:
@@ -31,7 +30,7 @@ x-backend: &backend
 services:
   web:
     <<: *backend
-    command: bundle exec rackup -p 3000 --host 0.0.0.0
+    command: bundle exec puma -p 3000
     ports:
       - '3000:3000'
     depends_on:
@@ -44,7 +43,7 @@ services:
 
   sidekiq:
     <<: *backend
-    command: bundle exec sidekiq -C config/sidekiq.yml
+    command: bundle exec sidekiq -r ./config/sidekiq_boot.rb -C config/sidekiq.yml
     depends_on:
       postgres:
         condition: service_healthy

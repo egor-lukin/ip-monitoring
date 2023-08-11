@@ -1,7 +1,7 @@
 version: '7.1'
 
 environment:
-  ENV: development
+  APP_ENV: development
 
 compose:
   files:
@@ -21,7 +21,14 @@ interaction:
 
   rspec:
     service: web
+    environment:
+      APP_ENV: test
     command: bundle exec rspec
+
+  rubocop:
+    service: web
+    command: bundle exec rubocop
+    compose_run_options: [ no-deps ]
 
   bundle:
     description: Run Bundler commands
@@ -29,16 +36,19 @@ interaction:
     command: bundle
     compose_run_options: [ no-deps ]
 
-  sidekiq:
-    description: Run Rails commands
-    service: sidekiq
+  redis:
+    description: Run redis console
+    service: redis
+    command: redis-cli -h redis
 
   psql:
     description: Run Postgres psql console
     service: postgres
-    default_args: ip_monitoring_dev
+    default_args: ip_monitoring_development
     command: psql -h postgres -U postgres
 
 provision:
   - dip compose down --volumes || true
   - dip compose up -d postgres
+  - dip bundle
+  - dip bash -c bin/setup
