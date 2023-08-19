@@ -3,7 +3,7 @@
 module Operations
   class CheckIpAddress
     include Dry::Monads[:result, :try, :task]
-    include Dry::Monads::Do.for(:call)
+    include Dry::Monads::Do.for(:call, :persist)
 
     include Import[
               ip_checks_repo: 'repos.ip_checks_repo',
@@ -15,14 +15,12 @@ module Operations
       ip_address = yield fetch_ip_address(id)
       return Failure(:ip_address_deleted) if ip_address.deleted?
 
-      ip_check_params = yield send_icmp_packet(ip_address.value)
+      ip_check_result = yield send_icmp_packet(ip_address.value)
+      return ip_check_result if ip_check_result.failure?
 
-      ip_address_repo.transaction do
-        yield save_ip_check(id, ip_check_params) if ip_address.monitoring_enabled?
-        yield update_ip_address(id, ip_check_params[:dropped])
+      ip_check_params = ip_check_result.value!
 
-        Success(ip_check_params)
-      end
+      persist(id, ip_check_params, ip_address.monitoring_enabled)
     end
 
     private
@@ -39,6 +37,15 @@ module Operations
       Try do
         icmp_checker.call(ip_address: value)
       end.to_result
+    end
+
+    def persist(id, ip_check_params, monitoring_enabled)
+      ip_address_repo.transaction do
+        yield save_ip_check(id, ip_check_params) if monitoring_enabled
+        yield update_ip_address(id, ip_check_params[:dropped])
+
+        Success(ip_check_params)
+      end
     end
 
     def save_ip_check(ip_address_id, ip_check_params)
