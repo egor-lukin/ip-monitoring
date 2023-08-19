@@ -40,6 +40,12 @@ dip rspec
 dip rubocop
 ```
 
+### Run psql
+
+``` sh
+dip psql
+```
+
 ### IPv6 
 
 For working with ipv6 inside docker check that you enable v6 support - https://docs.docker.com/config/daemon/ipv6/
