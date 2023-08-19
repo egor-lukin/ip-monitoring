@@ -23,6 +23,8 @@ gem 'pg'
 
 gem 'net-ping', '~> 2.0', '>= 2.0.8'
 
+gem 'rake'
+
 gem 'puma'
 
 group :development do

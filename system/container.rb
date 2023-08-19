@@ -10,7 +10,7 @@ class Application < Dry::System::Container
   use :zeitwerk
 
   configure do |config|
-    config.root = '/app'
+    config.root = File.expand_path('..', __dir__)
 
     config.component_dirs.add 'lib'
   end

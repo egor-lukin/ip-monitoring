@@ -111,6 +111,7 @@ GEM
     rack-test (2.1.0)
       rack (>= 1.3)
     rainbow (3.1.1)
+    rake (13.0.6)
     redis-client (0.15.0)
       connection_pool
     regexp_parser (2.8.1)
@@ -220,6 +221,7 @@ DEPENDENCIES
   puma
   rack
   rack-test
+  rake
   rom
   rom-factory
   rom-sql

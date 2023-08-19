@@ -1,0 +1,51 @@
+name: Build
+
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+
+jobs:
+  rspec:
+    runs-on: ubuntu-latest
+    env:
+      APP_ENV: test
+      BUNDLE_JOBS: 4
+      BUNDLE_RETRY: 3
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432
+      CI: true
+    strategy:
+      fail-fast: false
+      matrix:
+        ruby: ["3.1.2"]
+    services:
+      postgres:
+        image: postgres:14
+        ports: ["5432:5432"]
+        env:
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+    - uses: actions/checkout@v3
+    - name: Install system deps
+      run: |
+        sudo apt-get update
+        sudo apt-get -yqq install libpq-dev
+    - uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ${{ matrix.ruby }}
+        bundler-cache: true
+    - name: Create DB
+      run: |
+        env PGPASSWORD=postgres createdb -h localhost -U postgres ip_monitoring_test
+    - name: Run migrations
+      run: |
+        APP_ENV=test bundle exec rake db:setup db:migrate
+    - name: Run RSpec
+      run: |
+        bundle exec rspec -f d --force-color
